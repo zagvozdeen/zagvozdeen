@@ -1,0 +1,7 @@
+- 👋 Hi, I’m @zagvozdeen
+- 👀 I’m interested in programming, volleyball and bicycling
+- 🌱 I’m currently learning at the Ural Federal University in Yekaterinburg
+- 💞️ I’m looking to collaborate on Backend development
+- 📫 How to reach me: tg @zagvozdeen
+- 😄 Pronouns: Den
+- ⚡ Fun fact: I was in Dubai right during the session, 3 bicycles were stolen from me
