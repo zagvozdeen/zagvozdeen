@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{{ .Title }} — Zagvozdeen</title>
+    {{ .Vite.Tags }}
+</head>
+<body class="antialiased">
+<div class="max-w-2xl mx-auto px-4 pb-4">
+    <h1 class="font-roboto text-3xl font-bold mt-8">{{ .Title }}</h1>
+    <address class="font-sans font-medium text-sm text-gray-500 not-italic mt-2">
+        <a rel="author">{{ .Author }}</a><span class="select-none">&nbsp;•&nbsp;</span><time>{{ .Published }}</time>
+    </address>
+    <article class="prose font-serif">
+        {{ .Content }}
+    </article>
+</div>
+</body>
+</html>

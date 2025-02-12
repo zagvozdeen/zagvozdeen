@@ -1,0 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto&display=swap');
+@import "tailwindcss";
+@source "layout.html";
+@plugin "@tailwindcss/typography";
+
+@theme {
+    --font-sans: "Roboto", sans-serif;
+    --font-serif: "Playfair Display", serif;
+}
