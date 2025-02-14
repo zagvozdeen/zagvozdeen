@@ -3,6 +3,9 @@
     "id": "2025-02-12",
     "slug": "example-test-post",
     "title": "Это первая тестовая запись в блоге",
-    "author": "Denis Zagvozdin"
+    "author": "Denis Zagvozdin",
+    "lead": "Some text for lead",
+    "image": "i-am-in-spain.jpg",
+    "updated": "2025-02-14"
   }
 ]

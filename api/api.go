@@ -52,6 +52,15 @@ func (a *Application) Run() {
 		}
 	})
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("dist/assets"))))
+	mux.HandleFunc("GET /sitemap.xml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/sitemap.xml")
+	})
+	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/robots.txt")
+	})
+	mux.HandleFunc("GET /favicon.svg", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "public/favicon.svg")
+	})
 
 	server := &http.Server{
 		Addr:    ":8080",

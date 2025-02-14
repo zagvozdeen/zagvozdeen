@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>{{ .Title }} — Zagvozdeen</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     {{ .Vite.Tags }}
+    <meta name="description" content="{{ .Lead }}">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ .Title }}">
+    <meta property="og:description" content="{{ .Lead }}">
+    <meta property="og:url" content="{{ .URL }}">
+    <meta property="og:site_name" content="Блог Дениса Загвоздина">
+    <meta property="og:image" content="{{ .ImageURL }}">
+    <meta property="og:locale" content="ru_RU">
+    {{ .LD }}
 </head>
 <body class="antialiased">
 <div class="max-w-2xl mx-auto px-4 pb-4">

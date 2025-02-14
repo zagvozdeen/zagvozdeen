@@ -14,15 +14,19 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"os"
 	"time"
 )
 
 type Article struct {
-	ID     string `json:"id"`
-	Slug   string `json:"slug"`
-	Title  string `json:"title"`
-	Author string `json:"author"`
+	ID      string `json:"id"`
+	Slug    string `json:"slug"`
+	Title   string `json:"title"`
+	Lead    string `json:"lead"`
+	Author  string `json:"author"`
+	Image   string `json:"image"`
+	Updated string `json:"updated"`
 
 	html  []byte
 	files []string
@@ -112,6 +116,12 @@ func (c *Converter) Run() {
 		c.logger.Info("Old version removed", "version", old)
 	}
 	c.logger.Info("Conversion completed", "version", c.version)
+	err = c.NewSitemap(articles)
+	if err != nil {
+		c.logger.Error("Failed to create sitemap", "err", err)
+		return
+	}
+	c.logger.Info("Sitemap created")
 }
 
 func (c *Converter) handleArticle(a *Article) error {
@@ -173,20 +183,44 @@ func (c *Converter) createFiles(a *Article) error {
 	}
 	type page struct {
 		Title     string
+		Lead      string
 		Author    string
 		Published string
+		CreatedAt string
+		UpdatedAt string
+		URL       template.URL
+		ImageURL  template.URL
 		Content   template.HTML
+		LD        template.HTML
 		Vite      Vite
 	}
 	published, err := time.Parse(time.DateOnly, a.ID)
 	if err != nil {
-		return fmt.Errorf("failed to parse date: %w", err)
+		return fmt.Errorf("failed to parse published date: %w", err)
+	}
+	updated, err := time.Parse(time.DateOnly, a.Updated)
+	if err != nil {
+		return fmt.Errorf("failed to parse updated date: %w", err)
+	}
+	u, err := url.JoinPath(c.config.AppURL, "assets", c.version, a.ID, a.Image)
+	if err != nil {
+		return fmt.Errorf("failed to join image url: %w", err)
+	}
+	ld, err := c.NewLD(a)
+	if err != nil {
+		return fmt.Errorf("failed to create ld: %w", err)
 	}
 	err = t.Execute(f, page{
 		Title:     a.Title,
+		Lead:      a.Lead,
 		Author:    a.Author,
 		Published: published.Format("2 January 2006"),
+		CreatedAt: published.Format(time.DateOnly),
+		UpdatedAt: updated.Format(time.DateOnly),
+		URL:       template.URL(c.config.AppURL),
+		ImageURL:  template.URL(u),
 		Content:   template.HTML(a.html),
+		LD:        ld,
 		Vite:      c.vite,
 	})
 	if err1 := f.Close(); err1 != nil && err == nil {
