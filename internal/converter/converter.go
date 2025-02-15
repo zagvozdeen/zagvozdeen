@@ -16,6 +16,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -33,16 +34,19 @@ type Article struct {
 }
 
 type Converter struct {
-	config  config.Config
-	version string
-	logger  *slog.Logger
-	vite    Vite
+	config      config.Config
+	version     string
+	logger      *slog.Logger
+	vite        Vite
+	head        *strings.Builder
+	highlighter *Highlighter
 }
 
 func New(cfg config.Config) *Converter {
 	return &Converter{
 		config: cfg,
 		logger: slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		head:   &strings.Builder{},
 	}
 }
 
@@ -53,6 +57,11 @@ func (c *Converter) Run() {
 	uid, err := uuid.NewV7()
 	if err != nil {
 		c.logger.Error("Failed to generate new version uuid", "err", err)
+		return
+	}
+	c.highlighter, err = NewHighlighter(c.head)
+	if err != nil {
+		c.logger.Error("Failed to create highlighter", "err", err)
 		return
 	}
 	c.version = uid.String()
@@ -77,11 +86,6 @@ func (c *Converter) Run() {
 	err = os.MkdirAll(fmt.Sprintf("dist/%s", c.version), os.ModePerm)
 	if err != nil && !errors.Is(err, fs.ErrExist) {
 		c.logger.Error("Failed to create dist directory", "err", err)
-		return
-	}
-	err = os.MkdirAll(fmt.Sprintf("dist/assets/%s", c.version), os.ModePerm)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
-		c.logger.Error("Failed to create assets directory", "err", err)
 		return
 	}
 	err = c.InitVite()
@@ -135,7 +139,7 @@ func (c *Converter) handleArticle(a *Article) error {
 	ast.WalkFunc(doc, func(node ast.Node, entering bool) ast.WalkStatus {
 		if img, ok := node.(*ast.Image); ok && entering {
 			a.files = append(a.files, string(img.Destination))
-			img.Destination = []byte(fmt.Sprintf("%s/assets/%s/%s/%s", c.config.AppURL, c.version, a.ID, img.Destination))
+			img.Destination = []byte(fmt.Sprintf("%s/assets/%s/%s", c.config.AppURL, a.ID, img.Destination))
 			img.Attribute = &ast.Attribute{
 				Attrs: map[string][]byte{
 					"loading": []byte("lazy"),
@@ -145,8 +149,19 @@ func (c *Converter) handleArticle(a *Article) error {
 		return ast.GoToNext
 	})
 	htmlFlags := html.CommonFlags | html.HrefTargetBlank
-	opts := html.RendererOptions{Flags: htmlFlags}
-	renderer := html.NewRenderer(opts)
+	renderer := html.NewRenderer(html.RendererOptions{
+		Flags: htmlFlags,
+		RenderNodeHook: func(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, bool) {
+			if code, ok := node.(*ast.CodeBlock); ok {
+				err = c.highlighter.HTMLHighlight(w, string(code.Literal), string(code.Info))
+				if err != nil {
+					c.logger.Error("Failed to highlight code", "err", err)
+				}
+				return ast.GoToNext, true
+			}
+			return ast.GoToNext, false
+		},
+	})
 	a.html = markdown.Render(doc, renderer)
 	return nil
 }
@@ -156,14 +171,14 @@ func (c *Converter) createFiles(a *Article) error {
 	if err != nil {
 		return err
 	}
-	err = os.Mkdir(fmt.Sprintf("dist/assets/%s/%s", c.version, a.ID), os.ModePerm)
-	if err != nil {
+	err = os.Mkdir(fmt.Sprintf("dist/assets/%s", a.ID), os.ModePerm)
+	if err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
 	for _, f := range a.files {
 		err = c.copyFile(
 			fmt.Sprintf("blog/%s/%s", a.ID, f),
-			fmt.Sprintf("dist/assets/%s/%s/%s", c.version, a.ID, f),
+			fmt.Sprintf("dist/assets/%s/%s", a.ID, f),
 		)
 		if err != nil {
 			c.logger.Error("Failed to copy file", "err", err, "file", f)
@@ -192,6 +207,7 @@ func (c *Converter) createFiles(a *Article) error {
 		ImageURL  template.URL
 		Content   template.HTML
 		LD        template.HTML
+		Head      template.HTML
 		Vite      Vite
 	}
 	published, err := time.Parse(time.DateOnly, a.ID)
@@ -202,7 +218,7 @@ func (c *Converter) createFiles(a *Article) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse updated date: %w", err)
 	}
-	u, err := url.JoinPath(c.config.AppURL, "assets", c.version, a.ID, a.Image)
+	u, err := url.JoinPath(c.config.AppURL, "assets", a.ID, a.Image)
 	if err != nil {
 		return fmt.Errorf("failed to join image url: %w", err)
 	}
@@ -214,12 +230,13 @@ func (c *Converter) createFiles(a *Article) error {
 		Title:     a.Title,
 		Lead:      a.Lead,
 		Author:    a.Author,
-		Published: published.Format("2 January 2006"),
+		Published: published.Format("2.01.2006"),
 		CreatedAt: published.Format(time.DateOnly),
 		UpdatedAt: updated.Format(time.DateOnly),
 		URL:       template.URL(c.config.AppURL),
 		ImageURL:  template.URL(u),
 		Content:   template.HTML(a.html),
+		Head:      template.HTML(c.head.String()),
 		LD:        ld,
 		Vite:      c.vite,
 	})
@@ -242,6 +259,9 @@ func (c *Converter) copyFile(from, to string) error {
 	}()
 	destination, err := os.Create(to)
 	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return nil
+		}
 		return err
 	}
 	defer func() {

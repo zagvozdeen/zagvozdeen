@@ -10,5 +10,6 @@ export default defineConfig({
         rollupOptions: {
             input: 'web/index.css',
         },
+        copyPublicDir: false,
     },
 })

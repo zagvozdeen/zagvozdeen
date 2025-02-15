@@ -1,11 +1,11 @@
 [
   {
-    "id": "2025-02-12",
-    "slug": "example-test-post",
-    "title": "Это первая тестовая запись в блоге",
+    "id": "2025-02-15",
+    "slug": "how-to-create-your-own-blog-on-golang",
+    "title": "Как создать свой блог на Golang: варианты технологий для реализации",
     "author": "Denis Zagvozdin",
-    "lead": "Some text for lead",
-    "image": "i-am-in-spain.jpg",
-    "updated": "2025-02-14"
+    "lead": "Пост описывает варианты создания блога: статическая генерация HTML, динамическое формирование страниц и API с фронтендом с учетом SEO-ограничений. В этом блоге реализован комбинированный подход с исходным кодом на GitHub.",
+    "image": "how-to-write-your-own-blog.jpg",
+    "updated": "2025-02-15"
   }
 ]

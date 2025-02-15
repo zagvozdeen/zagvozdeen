@@ -25,7 +25,7 @@ func (c *Converter) NewSitemap(articles []Article) error {
 		Xmlns: "https://www.sitemaps.org/schemas/sitemap/0.9",
 	}
 	for _, article := range articles {
-		u, err := url.JoinPath(c.config.AppURL, "blog", article.Slug)
+		u, err := url.JoinPath(c.config.AppURL, "blog", article.Slug, "/")
 		if err != nil {
 			return err
 		}
